@@ -1,0 +1,12 @@
+librosa
+numpy
+scipy
+pandas
+scikit-learn
+matplotlib
+soundfile
+pillow
+torch
+torchaudio
+streamlit
+joblib
