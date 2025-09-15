@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.env
+*.venv
+env/
+venv/
+*.egg-info/
+*.egg
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Data
+data/raw/*
+!data/raw/README.md
+!data/processed/
+
+# Models
+models/
+*.pth
+*.pkl
+*.joblib
+
+# Logs
+*.log
+
+# Temporary files
+tmp_*.wav
+*.tmp
+*.csv
