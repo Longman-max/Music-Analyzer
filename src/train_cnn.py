@@ -1,47 +1,82 @@
-"""
-A minimal training loop using torchvision datasets.ImageFolder where mel-spectrograms
-are saved into class subfolders (e.g., processed/melspecs/<label>/*.png)
-"""
 import torch
 import torch.nn as nn
+import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms, models
+from pathlib import Path
 
 
-def train_cnn(data_dir, epochs=10, batch_size=32, lr=1e-4, model_out='cnn.pth'):
+def train_cnn(data_dir="data/processed/melspecs",
+              model_out="models/cnn_model.pth",
+              epochs=10,
+              batch_size=16,
+              lr=0.001):
+    """
+    Train a CNN on mel-spectrogram images stored in class-labeled subfolders.
+    Ex: data/processed/melspecs/<genre>/<image>.png
+    """
+
+    data_dir = Path(data_dir)
+    model_out = Path(model_out)
+
+    if not data_dir.exists():
+        raise FileNotFoundError(f"❌ Data directory not found: {data_dir}. Run dataset_builder.py first.")
+
+    # Data transforms (resize + normalize like ImageNet)
     transform = transforms.Compose([
         transforms.Resize((128, 128)),
         transforms.ToTensor(),
-        transforms.Normalize([0.5], [0.5])
+        transforms.Normalize(mean=[0.5], std=[0.5])
     ])
 
+    # Load dataset
     dataset = datasets.ImageFolder(data_dir, transform=transform)
-    loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=4)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = models.resnet18(pretrained=False)
-    model.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
-    model.fc = nn.Linear(model.fc.in_features, len(dataset.classes))
+    num_classes = len(dataset.classes)
+    print(f"✅ Loaded dataset from {data_dir}, classes = {dataset.classes}, samples = {len(dataset)}")
+
+    # Use pretrained ResNet18 (transfer learning)
+    model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
+    model.fc = nn.Linear(model.fc.in_features, num_classes)
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
 
+    # Loss & optimizer
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    optimizer = optim.Adam(model.parameters(), lr=lr)
 
+    # Training loop
     for epoch in range(epochs):
         model.train()
-        running = 0
-        for imgs, labels in loader:
-            imgs, labels = imgs.to(device), labels.to(device)
+        running_loss = 0.0
+        correct, total = 0, 0
+
+        for images, labels in dataloader:
+            images, labels = images.to(device), labels.to(device)
+
             optimizer.zero_grad()
-            out = model(imgs)
-            loss = criterion(out, labels)
+            outputs = model(images)
+            loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
-            running += loss.item()
-        print(f'Epoch {epoch+1}/{epochs} loss {running/len(loader):.4f}')
 
+            running_loss += loss.item()
+            _, predicted = torch.max(outputs, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+
+        acc = 100 * correct / total
+        print(f"📀 Epoch {epoch+1}/{epochs}, Loss: {running_loss/len(dataloader):.4f}, Acc: {acc:.2f}%")
+
+    # Save trained model
+    model_out.parent.mkdir(parents=True, exist_ok=True)
     torch.save(model.state_dict(), model_out)
-    print('Saved', model_out)
+    print(f"💾 Saved CNN model to {model_out}")
 
-if __name__ == '__main__':
-    train_cnn('processed/melspecs')
+    return model, dataset.classes
+
+
+if __name__ == "__main__":
+    train_cnn()
