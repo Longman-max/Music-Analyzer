@@ -1,7 +1,7 @@
 # Music-Analyzer 
-==============
 
-Music-Analyzer is a Python-based machine learning project for analyzing audio files and predicting their genres. It supports both **feature-based ML models** (Sklearn) and **image-based CNN models** using mel-spectrograms. The project also includes a **Streamlit web app** for easy demo and exploration.  
+
+Music-Analyzer is a Python-based machine learning project for analyzing audio files and predicting their genres. It supports both **feature-based ML models** (Sklearn) and **image-based CNN models** using mel-spectrograms. The project also includes a [**Streamlit Web App**](https://analyzemusic.streamlit.app/) for easy demo and exploration.  
 
 This project is an **upgrade and inspired by my first ML project**: [music_recommender](https://github.com/Longman-max/music_recommender.git)
 
