@@ -26,10 +26,10 @@ data/raw/*
 !data/processed/
 
 # Models
-models/
-*.pth
-*.pkl
-*.joblib
+# models/
+# *.pth
+# *.pkl
+# *.joblib
 
 # Logs
 *.log
