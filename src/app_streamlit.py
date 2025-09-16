@@ -17,51 +17,133 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Minimalistic CSS with 20% size reduction
+# Minimalistic CSS with dark mode support and 20% size reduction
 st.markdown("""
 <style>
     footer, header {display: none;}
     .block-container {padding-top: 0.8rem; padding-bottom: 0.8rem;}
     
+    /* Light mode variables */
+    :root {
+        --model-card-bg: #f0f2f5;
+        --model-card-border: #d9d9d9;
+        --model-card-text: #333333;
+        --upload-section-bg: #fafafa;
+        --upload-section-hover-bg: #ffffff;
+        --upload-section-border: #d9d9d9;
+        --upload-section-hover-border: #2c3e50;
+        --result-card-bg: #f0f2f5;
+        --result-card-border: #d9d9d9;
+        --result-card-text: #333333;
+        --prediction-label-bg: #2c3e50;
+        --prediction-label-text: white;
+        --section-header-color: #2c3e50;
+        --heading-color: #2c3e50;
+        --subtitle-color: #555;
+    }
+    
+    /* Dark mode variables */
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --model-card-bg: rgba(49, 51, 63, 0.4);
+            --model-card-border: rgba(250, 250, 250, 0.2);
+            --model-card-text: rgba(250, 250, 250, 0.9);
+            --upload-section-bg: rgba(49, 51, 63, 0.3);
+            --upload-section-hover-bg: rgba(49, 51, 63, 0.5);
+            --upload-section-border: rgba(250, 250, 250, 0.2);
+            --upload-section-hover-border: rgba(255, 75, 75, 0.6);
+            --result-card-bg: rgba(49, 51, 63, 0.4);
+            --result-card-border: rgba(250, 250, 250, 0.2);
+            --result-card-text: rgba(250, 250, 250, 0.9);
+            --prediction-label-bg: rgba(255, 75, 75, 0.8);
+            --prediction-label-text: white;
+            --section-header-color: rgba(250, 250, 250, 0.9);
+            --heading-color: rgba(250, 250, 250, 0.95);
+            --subtitle-color: rgba(250, 250, 250, 0.7);
+        }
+    }
+    
+    /* Streamlit dark mode class override */
+    [data-testid="stAppViewContainer"][data-theme="dark"] {
+        --model-card-bg: rgba(49, 51, 63, 0.4);
+        --model-card-border: rgba(250, 250, 250, 0.2);
+        --model-card-text: rgba(250, 250, 250, 0.9);
+        --upload-section-bg: rgba(49, 51, 63, 0.3);
+        --upload-section-hover-bg: rgba(49, 51, 63, 0.5);
+        --upload-section-border: rgba(250, 250, 250, 0.2);
+        --upload-section-hover-border: rgba(255, 75, 75, 0.6);
+        --result-card-bg: rgba(49, 51, 63, 0.4);
+        --result-card-border: rgba(250, 250, 250, 0.2);
+        --result-card-text: rgba(250, 250, 250, 0.9);
+        --prediction-label-bg: rgba(255, 75, 75, 0.8);
+        --prediction-label-text: white;
+        --section-header-color: rgba(250, 250, 250, 0.9);
+        --heading-color: rgba(250, 250, 250, 0.95);
+        --subtitle-color: rgba(250, 250, 250, 0.7);
+    }
+    
     .model-card {
-        background: #f0f2f5;
+        background: var(--model-card-bg);
+        color: var(--model-card-text);
         padding: 1.2rem;
         border-radius: 8px;
-        border: 1px solid #d9d9d9;
+        border: 1px solid var(--model-card-border);
         margin-bottom: 0.8rem;
         transition: all 0.2s ease;
     }
     .model-card:hover {
-        box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.15);
         transform: translateY(-1px);
+    }
+    .model-card h4 {
+        color: var(--model-card-text);
+        margin: 0 0 0.5rem 0;
+    }
+    .model-card p {
+        color: var(--model-card-text);
+        opacity: 0.9;
+        margin: 0;
     }
     
     .upload-section {
-        background: #fafafa;
+        background: var(--upload-section-bg);
         padding: 1.6rem;
         border-radius: 8px;
-        border: 2px dashed #d9d9d9;
+        border: 2px dashed var(--upload-section-border);
         text-align: center;
         margin-bottom: 1.2rem;
         transition: all 0.2s ease;
     }
     .upload-section:hover {
-        border-color: #2c3e50;
-        background: #ffffff;
+        border-color: var(--upload-section-hover-border);
+        background: var(--upload-section-hover-bg);
+    }
+    .upload-section h4 {
+        color: var(--section-header-color);
+        margin: 0;
     }
     
     .result-card {
-        background: #f0f2f5;
+        background: var(--result-card-bg);
+        color: var(--result-card-text);
         padding: 1.6rem;
         border-radius: 8px;
         text-align: center;
-        border: 1px solid #d9d9d9;
+        border: 1px solid var(--result-card-border);
         margin-top: 1.2rem;
+    }
+    .result-card h2 {
+        color: var(--result-card-text);
+        margin: 0 0 1rem 0;
+    }
+    .result-card p {
+        color: var(--result-card-text);
+        opacity: 0.9;
     }
     
     .prediction-label {
-        background: #2c3e50;
-        color: white;
+        background: var(--prediction-label-bg);
+        color: var(--prediction-label-text);
         padding: 0.64rem 1.6rem;
         border-radius: 5px;
         font-size: 0.96rem;
@@ -73,20 +155,28 @@ st.markdown("""
     }
     
     .section-header {
-        color: #2c3e50;
+        color: var(--section-header-color);
         font-size: 0.96rem;
         font-weight: 500;
         margin-bottom: 0.8rem;
+    }
+    
+    .main-title {
+        color: var(--heading-color);
+    }
+    
+    .main-subtitle {
+        color: var(--subtitle-color);
     }
 </style>
 """, unsafe_allow_html=True)
 
 # Minimal title
 st.markdown("""
-<h1 style="font-size:3rem; font-weight:500; color:#2c3e50; margin-bottom:0.8rem;">
+<h1 class="main-title" style="font-size:3rem; font-weight:500; margin-bottom:0.8rem;">
 Music Analyzer
 </h1>
-<p style="margin-top:0; margin-bottom:0.8rem; color:#555;">AI-Powered Music Genre Classification</p>
+<p class="main-subtitle" style="margin-top:0; margin-bottom:0.8rem;">AI-Powered Music Genre Classification</p>
 """, unsafe_allow_html=True)
 
 # Sidebar
