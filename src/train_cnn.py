@@ -26,7 +26,7 @@ def train_cnn(data_dir="data/processed/melspecs",
     transform = transforms.Compose([
         transforms.Resize((128, 128)),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.5], std=[0.5])
+        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])  # for RGB spectrograms
     ])
 
     # Load dataset
@@ -70,10 +70,14 @@ def train_cnn(data_dir="data/processed/melspecs",
         acc = 100 * correct / total
         print(f"📀 Epoch {epoch+1}/{epochs}, Loss: {running_loss/len(dataloader):.4f}, Acc: {acc:.2f}%")
 
-    # Save trained model
+    # Save trained model + classes
     model_out.parent.mkdir(parents=True, exist_ok=True)
-    torch.save(model.state_dict(), model_out)
-    print(f"💾 Saved CNN model to {model_out}")
+    checkpoint = {
+        "model_state_dict": model.state_dict(),
+        "classes": dataset.classes
+    }
+    torch.save(checkpoint, model_out)
+    print(f"💾 Saved CNN model + classes to {model_out}")
 
     return model, dataset.classes
 

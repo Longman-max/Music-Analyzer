@@ -8,6 +8,7 @@ from torchvision import models, transforms
 from PIL import Image
 from pathlib import Path
 import time
+import os
 
 # Configure page
 st.set_page_config(
@@ -17,77 +18,57 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Minimalistic CSS with dark mode support and 20% size reduction
+# Refactored CSS for robust light and dark mode support
 st.markdown("""
 <style>
-    footer, header {display: none;}
-    .block-container {padding-top: 0.8rem; padding-bottom: 0.8rem;}
+    /* --- THEME VARIABLES --- */
     
-    /* Light mode variables */
-    :root {
-        --model-card-bg: #f0f2f5;
-        --model-card-border: #d9d9d9;
-        --model-card-text: #333333;
-        --upload-section-bg: #fafafa;
-        --upload-section-hover-bg: #ffffff;
-        --upload-section-border: #d9d9d9;
-        --upload-section-hover-border: #2c3e50;
-        --result-card-bg: #f0f2f5;
-        --result-card-border: #d9d9d9;
-        --result-card-text: #333333;
-        --prediction-label-bg: #2c3e50;
-        --prediction-label-text: white;
-        --section-header-color: #2c3e50;
+    /* Light Theme */
+    [data-theme="light"] {
+        --text-color: #333333;
         --heading-color: #2c3e50;
-        --subtitle-color: #555;
+        --subtitle-color: #555555;
+        --secondary-bg-color: #f0f2f5;
+        --card-border-color: #d9d9d9;
+        --primary-accent-bg: #2c3e50;
+        --primary-accent-text: white;
+        --dashed-border-color: #d9d9d9;
+        --hover-border-color: #2c3e50;
+        --hover-bg-color: #ffffff;
     }
-    
-    /* Dark mode variables */
-    @media (prefers-color-scheme: dark) {
-        :root {
-            --model-card-bg: rgba(49, 51, 63, 0.4);
-            --model-card-border: rgba(250, 250, 250, 0.2);
-            --model-card-text: rgba(250, 250, 250, 0.9);
-            --upload-section-bg: rgba(49, 51, 63, 0.3);
-            --upload-section-hover-bg: rgba(49, 51, 63, 0.5);
-            --upload-section-border: rgba(250, 250, 250, 0.2);
-            --upload-section-hover-border: rgba(255, 75, 75, 0.6);
-            --result-card-bg: rgba(49, 51, 63, 0.4);
-            --result-card-border: rgba(250, 250, 250, 0.2);
-            --result-card-text: rgba(250, 250, 250, 0.9);
-            --prediction-label-bg: rgba(255, 75, 75, 0.8);
-            --prediction-label-text: white;
-            --section-header-color: rgba(250, 250, 250, 0.9);
-            --heading-color: rgba(250, 250, 250, 0.95);
-            --subtitle-color: rgba(250, 250, 250, 0.7);
-        }
-    }
-    
-    /* Streamlit dark mode class override */
-    [data-testid="stAppViewContainer"][data-theme="dark"] {
-        --model-card-bg: rgba(49, 51, 63, 0.4);
-        --model-card-border: rgba(250, 250, 250, 0.2);
-        --model-card-text: rgba(250, 250, 250, 0.9);
-        --upload-section-bg: rgba(49, 51, 63, 0.3);
-        --upload-section-hover-bg: rgba(49, 51, 63, 0.5);
-        --upload-section-border: rgba(250, 250, 250, 0.2);
-        --upload-section-hover-border: rgba(255, 75, 75, 0.6);
-        --result-card-bg: rgba(49, 51, 63, 0.4);
-        --result-card-border: rgba(250, 250, 250, 0.2);
-        --result-card-text: rgba(250, 250, 250, 0.9);
-        --prediction-label-bg: rgba(255, 75, 75, 0.8);
-        --prediction-label-text: white;
-        --section-header-color: rgba(250, 250, 250, 0.9);
+
+    /* Dark Theme */
+    [data-theme="dark"] {
+        --text-color: rgba(250, 250, 250, 0.9);
         --heading-color: rgba(250, 250, 250, 0.95);
         --subtitle-color: rgba(250, 250, 250, 0.7);
+        --secondary-bg-color: rgba(49, 51, 63, 0.4);
+        --card-border-color: rgba(250, 250, 250, 0.2);
+        --primary-accent-bg: rgba(255, 75, 75, 0.8);
+        --primary-accent-text: white;
+        --dashed-border-color: rgba(250, 250, 250, 0.2);
+        --hover-border-color: rgba(255, 75, 75, 0.6);
+        --hover-bg-color: rgba(49, 51, 63, 0.5);
     }
     
+    /* --- GENERAL & COMPONENT STYLES --- */
+    body { color: var(--text-color); }
+    footer, header { display: none; }
+    .block-container { padding-top: 0.8rem; padding-bottom: 0.8rem; }
+    .main-title { color: var(--heading-color); }
+    .main-subtitle { color: var(--subtitle-color); }
+    .section-header, [data-testid="stWidgetLabel"] > label {
+        color: var(--subtitle-color);
+        font-size: 0.96rem;
+        font-weight: 500;
+        margin-bottom: 0.8rem;
+    }
     .model-card {
-        background: var(--model-card-bg);
-        color: var(--model-card-text);
+        background: var(--secondary-bg-color);
+        color: var(--text-color);
         padding: 1.2rem;
         border-radius: 8px;
-        border: 1px solid var(--model-card-border);
+        border: 1px solid var(--card-border-color);
         margin-bottom: 0.8rem;
         transition: all 0.2s ease;
     }
@@ -95,55 +76,36 @@ st.markdown("""
         box-shadow: 0 3px 10px rgba(0,0,0,0.15);
         transform: translateY(-1px);
     }
-    .model-card h4 {
-        color: var(--model-card-text);
-        margin: 0 0 0.5rem 0;
-    }
-    .model-card p {
-        color: var(--model-card-text);
-        opacity: 0.9;
-        margin: 0;
-    }
-    
+    .model-card h4 { color: inherit; margin: 0 0 0.5rem 0; }
+    .model-card p { color: inherit; opacity: 0.9; margin: 0; }
     .upload-section {
-        background: var(--upload-section-bg);
+        background: var(--secondary-bg-color);
         padding: 1.6rem;
         border-radius: 8px;
-        border: 2px dashed var(--upload-section-border);
+        border: 2px dashed var(--dashed-border-color);
         text-align: center;
         margin-bottom: 1.2rem;
         transition: all 0.2s ease;
     }
     .upload-section:hover {
-        border-color: var(--upload-section-hover-border);
-        background: var(--upload-section-hover-bg);
+        border-color: var(--hover-border-color);
+        background: var(--hover-bg-color);
     }
-    .upload-section h4 {
-        color: var(--section-header-color);
-        margin: 0;
-    }
-    
+    .upload-section h4 { color: var(--heading-color); margin: 0; }
     .result-card {
-        background: var(--result-card-bg);
-        color: var(--result-card-text);
+        background: var(--secondary-bg-color);
+        color: var(--text-color);
         padding: 1.6rem;
         border-radius: 8px;
         text-align: center;
-        border: 1px solid var(--result-card-border);
+        border: 1px solid var(--card-border-color);
         margin-top: 1.2rem;
     }
-    .result-card h2 {
-        color: var(--result-card-text);
-        margin: 0 0 1rem 0;
-    }
-    .result-card p {
-        color: var(--result-card-text);
-        opacity: 0.9;
-    }
-    
+    .result-card h2 { color: inherit; margin: 0 0 1rem 0; }
+    .result-card p { color: inherit; opacity: 0.9; }
     .prediction-label {
-        background: var(--prediction-label-bg);
-        color: var(--prediction-label-text);
+        background: var(--primary-accent-bg);
+        color: var(--primary-accent-text);
         padding: 0.64rem 1.6rem;
         border-radius: 5px;
         font-size: 0.96rem;
@@ -152,21 +114,6 @@ st.markdown("""
         margin: 0.8rem 0;
         letter-spacing: 1px;
         text-transform: uppercase;
-    }
-    
-    .section-header {
-        color: var(--section-header-color);
-        font-size: 0.96rem;
-        font-weight: 500;
-        margin-bottom: 0.8rem;
-    }
-    
-    .main-title {
-        color: var(--heading-color);
-    }
-    
-    .main-subtitle {
-        color: var(--subtitle-color);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -185,8 +132,7 @@ with st.sidebar:
     st.markdown("1. Choose your AI model\n2. Upload an audio file\n3. Get instant predictions")
     st.markdown("---")
     st.markdown("### Model Information")
-    model_info = st.expander("Learn about the models", expanded=False)
-    with model_info:
+    with st.expander("Learn about the models", expanded=False):
         st.write("**Sklearn Model**: Uses extracted audio features like tempo, pitch, and spectral characteristics.")
         st.write("**CNN Model**: Analyzes mel-spectrograms using deep learning for visual pattern recognition.")
 
@@ -195,15 +141,19 @@ col1, col2 = st.columns([2, 1])
 
 with col1:
     st.markdown('<div class="section-header">Select AI Model</div>', unsafe_allow_html=True)
-    
+
     # Paths
     SKLEARN_MODEL_PATH = Path("models/sklearn_model.pkl")
     CNN_MODEL_PATH = Path("models/cnn_model.pth")
-    
-    model_choice = st.radio("Choose your preferred model:", ["Sklearn (features)", "CNN (spectrograms)"])
-    
+
+    model_choice = st.radio(
+        "Choose your preferred model:",
+        ["Sklearn (features)", "CNN (spectrograms)"],
+        label_visibility="collapsed"
+    )
+
     clf, label_encoder, scaler, cnn_model, classes = None, None, None, None, None
-    
+
     with st.spinner("Loading AI model..."):
         if model_choice == "Sklearn (features)" and SKLEARN_MODEL_PATH.exists():
             obj = joblib.load(SKLEARN_MODEL_PATH)
@@ -218,13 +168,14 @@ with col1:
                     <p>Analyzing audio characteristics like tempo, pitch, and spectral features.</p>
                 </div>
                 """, unsafe_allow_html=True)
+
         elif model_choice == "CNN (spectrograms)" and CNN_MODEL_PATH.exists():
             checkpoint = torch.load(CNN_MODEL_PATH, map_location="cpu")
             classes = checkpoint["classes"]
             num_classes = len(classes)
             cnn_model = models.resnet18(weights=None)
             cnn_model.fc = nn.Linear(cnn_model.fc.in_features, num_classes)
-            cnn_model.load_state_dict(checkpoint["state_dict"])
+            cnn_model.load_state_dict(checkpoint["model_state_dict"])  # ✅ fixed key
             cnn_model.eval()
             st.success("CNN model loaded")
             with col2:
@@ -247,15 +198,17 @@ if uploaded:
     with audio_col1:
         st.markdown('<div class="upload-section"><h4>Audio Preview</h4></div>', unsafe_allow_html=True)
         tmp_file = Path("tmp_upload.wav")
-        with tmp_file.open("wb") as f: f.write(uploaded.getbuffer())
+        with tmp_file.open("wb") as f:
+            f.write(uploaded.getbuffer())
         st.audio(str(tmp_file))
         st.info(f"**File**: {uploaded.name} | **Size**: {len(uploaded.getvalue())/1024:.1f} KB")
-    
+
     with audio_col2:
         st.markdown('<div class="section-header">Processing Status</div>', unsafe_allow_html=True)
         progress_bar = st.progress(0)
         status_text = st.empty()
-        
+
+        pred_label = ""
         if model_choice == "Sklearn (features)":
             status_text.text("Extracting audio features...")
             progress_bar.progress(25)
@@ -270,7 +223,7 @@ if uploaded:
             pred_label = label_encoder.inverse_transform([pred])[0]
             progress_bar.progress(100)
             status_text.text("Done")
-        
+
         elif model_choice == "CNN (spectrograms)":
             status_text.text("Generating spectrogram...")
             progress_bar.progress(20)
@@ -281,7 +234,7 @@ if uploaded:
             transform = transforms.Compose([
                 transforms.Resize((128, 128)),
                 transforms.ToTensor(),
-                transforms.Normalize(mean=[0.5], std=[0.5])
+                transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])  # ✅ RGB fix
             ])
             image = Image.open(spec_path).convert("RGB")
             image = transform(image).unsqueeze(0)
@@ -293,18 +246,27 @@ if uploaded:
                 pred_label = classes[pred_idx.item()]
             progress_bar.progress(100)
             status_text.text("Done")
-    
+
+            # ✅ Clean up spectrogram after prediction
+            if os.path.exists(spec_path):
+                os.remove(spec_path)
+
     # Results
-    st.markdown(f"""
-    <div class="result-card">
-        <h2>🎯 Prediction Results</h2>
-        <div class="prediction-label">{pred_label}</div>
-        <p>Genre classified using {model_choice} model</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown("### 📈 Analysis Insights")
-    insight_col1, insight_col2, insight_col3 = st.columns(3)
-    insight_col1.metric("🎵 Predicted Genre", pred_label)
-    insight_col2.metric("🤖 Model Used", model_choice.split()[0])
-    insight_col3.metric("📁 File Format", uploaded.name.split('.')[-1].upper())
+    if pred_label:
+        st.markdown(f"""
+        <div class="result-card">
+            <h2>🎯 Prediction Results</h2>
+            <div class="prediction-label">{pred_label}</div>
+            <p>Genre classified using {model_choice} model</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("### 📈 Analysis Insights")
+        insight_col1, insight_col2, insight_col3 = st.columns(3)
+        insight_col1.metric("🎵 Predicted Genre", pred_label)
+        insight_col2.metric("🤖 Model Used", model_choice.split()[0])
+        insight_col3.metric("📁 File Format", uploaded.name.split('.')[-1].upper())
+
+        # ✅ Clean up uploaded file after use
+        if os.path.exists(tmp_file):
+            os.remove(tmp_file)
